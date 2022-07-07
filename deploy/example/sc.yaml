@@ -1,0 +1,17 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: qsan-nas-storage
+provisioner: file.csi.qsan.com
+parameters:
+  server: 192.168.206.156
+  datastoreId: "2459490916446723448"
+  blocksize: "65536"
+  provision: "thick"
+  compress: "lz4"
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+mountOptions:
+  - hard
+  - nfsvers=3
+  - nolock
