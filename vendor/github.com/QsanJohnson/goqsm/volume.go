@@ -47,7 +47,7 @@ func (v *VolumeOp) ListVolumes(ctx context.Context, scId, volId string) (*[]Volu
 	}
 
 	res := []VolumeData{}
-	if err := v.client.sendRequest(ctx, req, &res); err != nil {
+	if err := v.client.SendRequest(ctx, req, &res); err != nil {
 		return nil, err
 	}
 
@@ -84,7 +84,7 @@ func (v *VolumeOp) CreateVolume(ctx context.Context, scId, name string, size uin
 	}
 
 	res := VolumeData{}
-	if err := v.client.sendRequest(ctx, req, &res); err != nil {
+	if err := v.client.SendRequest(ctx, req, &res); err != nil {
 		return nil, err
 	}
 
@@ -99,7 +99,7 @@ func (v *VolumeOp) DeleteVolume(ctx context.Context, scId, volId string) error {
 	}
 
 	res := EmptyData{}
-	if err := v.client.sendRequest(ctx, req, &res); err != nil {
+	if err := v.client.SendRequest(ctx, req, &res); err != nil {
 		return err
 	}
 
@@ -114,7 +114,7 @@ func (v *VolumeOp) ExportVolume(ctx context.Context, scId, volId string) error {
 	}
 
 	res := EmptyData{}
-	if err := v.client.sendRequest(ctx, req, &res); err != nil {
+	if err := v.client.SendRequest(ctx, req, &res); err != nil {
 		return err
 	}
 
@@ -129,7 +129,7 @@ func (v *VolumeOp) UnexportVolume(ctx context.Context, scId, volId string) error
 	}
 
 	res := EmptyData{}
-	if err := v.client.sendRequest(ctx, req, &res); err != nil {
+	if err := v.client.SendRequest(ctx, req, &res); err != nil {
 		return err
 	}
 

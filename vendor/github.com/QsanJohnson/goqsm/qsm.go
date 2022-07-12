@@ -80,23 +80,31 @@ func (c *Client) NewRequest(ctx context.Context, method, urlPath string, body ur
 	return req, nil
 }
 
-func (c *Client) sendRequest(ctx context.Context, req *http.Request, v interface{}) error {
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	if c.apiKey != "" {
-		glog.V(4).Infof("[sendRequest] apiKey: %s\n", c.apiKey)
-		req.Header.Set("Authorization", c.apiKey)
+func (c *AuthClient) SendRequest(ctx context.Context, req *http.Request, v interface{}) error {
+	res, err := c.doSendRequest(ctx, req, v)
+	if err != nil {
+		return err
 	}
 
-	req = req.WithContext(ctx)
-	res, err := c.HTTPClient.Do(req)
-	if err != nil {
-		glog.Errorf("[sendRequest] err: %v\n", err)
-		return err
+	if res.StatusCode == 401 {
+		res.Body.Close()
+
+		// refresh token expired, generate a new access token
+		glog.V(2).Infof("[AuthSendRequest] generate new access token. (%s%s)\n", req.Host, req.URL.Path)
+		authRes, err := c.genAccessToken(ctx, c.refreshToken)
+		if err != nil {
+			return fmt.Errorf("genAccessToken failed: %v\n", err)
+		}
+
+		// Update new access token then send request again
+		c.accessToken = authRes.AccessToken
+		c.apiKey = authRes.AccessToken
+		glog.V(2).Infof("[AuthSendRequest] SendRequest again (%s%s)\n", req.Host, req.URL.Path)
+		res, err = c.doSendRequest(ctx, req, v)
 	}
 
 	defer res.Body.Close()
 
-	glog.V(2).Infof("[sendRequest] StatusCode: %d\n", res.StatusCode)
 	if res.StatusCode != http.StatusOK {
 		errRes := errorResponse{}
 		if err = json.NewDecoder(res.Body).Decode(&errRes); err == nil {
@@ -110,8 +118,51 @@ func (c *Client) sendRequest(ctx context.Context, req *http.Request, v interface
 		return err
 	}
 
-	glog.V(4).Infof("[sendRequest] res: %+v\n", v)
-	return nil
+	return err
+
+}
+
+func (c *Client) SendRequest(ctx context.Context, req *http.Request, v interface{}) error {
+	res, err := c.doSendRequest(ctx, req, v)
+	if err != nil {
+		return err
+	}
+
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		errRes := errorResponse{}
+		if err = json.NewDecoder(res.Body).Decode(&errRes); err == nil {
+			return errors.New(errRes.Error.Message)
+		}
+
+		return fmt.Errorf("unknown error, status code: %d", res.StatusCode)
+	}
+
+	if err = json.NewDecoder(res.Body).Decode(v); err != nil {
+		return err
+	}
+
+	return err
+
+}
+
+func (c *Client) doSendRequest(ctx context.Context, req *http.Request, v interface{}) (*http.Response, error) {
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	if c.apiKey != "" {
+		glog.V(5).Infof("[doSendRequest] apiKey: %s\n", c.apiKey)
+		req.Header.Set("Authorization", c.apiKey)
+	}
+
+	req = req.WithContext(ctx)
+	res, err := c.HTTPClient.Do(req)
+	if err != nil {
+		glog.Errorf("[doSendRequest] err: %v\n", err)
+		return nil, err
+	}
+
+	glog.V(4).Infof("[doSendRequest] StatusCode: %d (%s%s)\n", res.StatusCode, req.Host, req.URL.Path)
+	return res, nil
 }
 
 func (c *Client) login(ctx context.Context, user string, passwd string) (*AuthRes, error) {
@@ -126,7 +177,25 @@ func (c *Client) login(ctx context.Context, user string, passwd string) (*AuthRe
 	}
 
 	res := AuthRes{}
-	if err := c.sendRequest(ctx, req, &res); err != nil {
+	if err := c.SendRequest(ctx, req, &res); err != nil {
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+// Generate a new access token from refresh token
+func (c *Client) genAccessToken(ctx context.Context, t string) (*AuthRes, error) {
+	params := url.Values{}
+	params.Add("refreshToken", t)
+
+	req, err := c.NewRequest(ctx, http.MethodPost, "/auth/refresh", params)
+	if err != nil {
+		return nil, err
+	}
+
+	res := AuthRes{}
+	if err := c.SendRequest(ctx, req, &res); err != nil {
 		return nil, err
 	}
 
@@ -141,12 +210,13 @@ func (c *Client) GetAuthClient(ctx context.Context, user string, passwd string) 
 
 	glog.V(3).Infof("AccessToken: %s\n", res.AccessToken)
 
-	ret := &AuthClient{}
-	ret.accessToken = res.AccessToken
-	ret.refreshToken = res.RefreshToken
-	ret.baseURL = c.baseURL
-	ret.HTTPClient = c.HTTPClient
-	ret.apiKey = res.AccessToken
-
-	return ret, nil
+	return &AuthClient{
+		Client: Client{
+			apiKey:     res.AccessToken,
+			baseURL:    c.baseURL,
+			HTTPClient: c.HTTPClient,
+		},
+		accessToken:  res.AccessToken,
+		refreshToken: res.RefreshToken,
+	}, nil
 }

@@ -81,7 +81,7 @@ spec:
             allowPrivilegeEscalation: true
           image: johnsoncheng0210/qsan-file-csi
           args:
-            - "-v=1"
+            - "-v=4"
             - "--nodeid=$(NODE_ID)"
             - "--endpoint=$(CSI_ENDPOINT)"
             - "--secret-file=/etc/qsan/qsan-auth.yaml"

@@ -39,7 +39,7 @@ func (s *SystemOp) GetAbout(ctx context.Context) (*AboutData, error) {
 	}
 
 	res := AboutData{}
-	if err := s.client.sendRequest(ctx, req, &res); err != nil {
+	if err := s.client.SendRequest(ctx, req, &res); err != nil {
 		return nil, err
 	}
 
