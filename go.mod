@@ -3,7 +3,7 @@ module github.com/QsanJohnson/csi-file-qsan
 go 1.18
 
 require (
-	github.com/QsanJohnson/goqsm v0.0.0-20220705092256-bf58ee47fdcd
+	github.com/QsanJohnson/goqsm v0.0.0-20220802024500-b98883a2a118
 	github.com/container-storage-interface/spec v1.5.0
 	github.com/golang/protobuf v1.5.2
 	github.com/kubernetes-csi/csi-lib-utils v0.9.0

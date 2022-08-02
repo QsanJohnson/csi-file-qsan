@@ -106,6 +106,24 @@ func (v *VolumeOp) DeleteVolume(ctx context.Context, scId, volId string) error {
 	return nil
 }
 
+// ResizeVolume resize or expand a volume from a storage container
+func (v *VolumeOp) ResizeVolume(ctx context.Context, scId, volId string, size uint64) error {
+	params := url.Values{}
+	params.Add("sizeMB", strconv.FormatUint(size, 10))
+
+	req, err := v.client.NewRequest(ctx, http.MethodPatch, "/rest/internal/cloud/containers/"+scId+"/vols/"+volId, params)
+	if err != nil {
+		return err
+	}
+
+	res := EmptyData{}
+	if err := v.client.SendRequest(ctx, req, &res); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // ExportVolume export a NFS volume
 func (v *VolumeOp) ExportVolume(ctx context.Context, scId, volId string) error {
 	req, err := v.client.NewRequest(ctx, http.MethodPost, "/rest/internal/cloud/containers/"+scId+"/vols/"+volId+"/share", nil)

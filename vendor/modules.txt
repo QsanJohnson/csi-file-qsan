@@ -1,4 +1,4 @@
-# github.com/QsanJohnson/goqsm v0.0.0-20220705092256-bf58ee47fdcd
+# github.com/QsanJohnson/goqsm v0.0.0-20220802024500-b98883a2a118
 ## explicit; go 1.17
 github.com/QsanJohnson/goqsm
 # github.com/bits-and-blooms/bitset v1.2.0

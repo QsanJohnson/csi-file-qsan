@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/golang/glog"
 )
@@ -19,6 +20,12 @@ type Client struct {
 	apiKey     string
 	baseURL    string
 	HTTPClient *http.Client
+}
+
+// ClientOptions are options for QSM http client.
+type ClientOptions struct {
+	Https      bool
+	ReqTimeout time.Duration
 }
 
 // QSM client with authentication
@@ -46,11 +53,20 @@ type errorResponse struct {
 }
 
 // NewClient returns QSM client with given URL
-func NewClient(ip string) *Client {
-	return &Client{
+func NewClient(ip string, opts ClientOptions) *Client {
+	client := &Client{
 		HTTPClient: &http.Client{},
 		baseURL:    "http://" + ip,
 	}
+
+	if opts.ReqTimeout != 0 {
+		client.HTTPClient.Timeout = opts.ReqTimeout
+	}
+
+	if opts.Https {
+	}
+
+	return client
 }
 
 func (c *Client) NewRequest(ctx context.Context, method, urlPath string, body url.Values) (*http.Request, error) {
@@ -89,7 +105,7 @@ func (c *AuthClient) SendRequest(ctx context.Context, req *http.Request, v inter
 	if res.StatusCode == 401 {
 		res.Body.Close()
 
-		// refresh token expired, generate a new access token
+		// When the existing access token expired, generate a new access token.
 		glog.V(2).Infof("[AuthSendRequest] generate new access token. (%s%s)\n", req.Host, req.URL.Path)
 		authRes, err := c.genAccessToken(ctx, c.refreshToken)
 		if err != nil {

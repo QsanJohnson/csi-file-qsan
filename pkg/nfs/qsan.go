@@ -2,6 +2,7 @@ package nfs
 
 import (
 	"io/ioutil"
+	"time"
 
 	"github.com/QsanJohnson/goqsm"
 	"golang.org/x/net/context"
@@ -74,7 +75,8 @@ func (c *QsanClient) GetnAddAuthClient(ctx context.Context, ip string) (*goqsm.A
 		return authClient, nil
 	} else {
 		username, password := c.GetSecret(ip)
-		client := goqsm.NewClient(ip)
+		opt := goqsm.ClientOptions{ReqTimeout: 60 * time.Second}
+		client := goqsm.NewClient(ip, opt)
 		klog.Infof("Add a Qsan client ip(%s) username(%s), password(%s)", ip, username, password)
 		authClient, err := client.GetAuthClient(ctx, username, password)
 		if err != nil {
